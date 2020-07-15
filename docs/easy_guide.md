@@ -161,4 +161,4 @@ ATM 还提供商户接入的形式：
 * mixin 小群技术支持 :)
 
 感兴趣的话，在 mixin messenger 里面联系发条 （37160854）
-![发条联系方式](https://mixin-assets-cn.zeromesh.net/mixin/attachments/1594816553-f4d35ea2e6f71b8e017e16b89e7d595034aa34591eeceb6c124160c067c4abbf)
+![发条联系方式](https://raw.githubusercontent.com/fox-one/atm-sdk/master/docs/fatiao.jpg)
