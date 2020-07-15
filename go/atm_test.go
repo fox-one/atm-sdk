@@ -6,6 +6,8 @@ import (
 	"encoding/pem"
 	"net/http"
 	"time"
+
+	"github.com/fox-one/atm-sdk/go/proto"
 )
 
 const host = "https://efox.fox.one"
@@ -29,11 +31,11 @@ func ExampleAtm() {
 	token := GenerateToken(merchantID, key, time.Minute)
 	ctx = WithToken(ctx, token)
 
-	client := atm_sdk.NewMerchantServiceProtobufClient(host, &http.Client{})
+	client := proto.NewMerchantServiceProtobufClient(host, &http.Client{})
 
 	// 查询订单
 	orderID := "<trace id>"
-	order, err := client.ReadOrder(ctx, &atm_sdk.MerchantServiceReq_ReadOrder{
+	order, err := client.ReadOrder(ctx, &proto.MerchantServiceReq_ReadOrder{
 		TraceId: orderID,
 	})
 
@@ -46,22 +48,22 @@ func ExampleAtm() {
 	}
 
 	// 撤单
-	if _, err := client.CancelOrder(ctx, &atm_sdk.MerchantServiceReq_CancelOrder{
+	if _, err := client.CancelOrder(ctx, &proto.MerchantServiceReq_CancelOrder{
 		TraceId: orderID,
 	}); err != nil {
 		// handle cancel order failed error
 	}
 
 	// 查询历史订单
-	results, err := client.ListOrders(ctx, &atm_sdk.MerchantServiceReq_ListOrders{
-		Symbol:   "BTCUSDT",             // pay symbol，为空查询所有交易对
-		Side:     "ASK",                 // ASK or BID，为空查询所有方向
-		Strategy: StrategyMarket,        // 策略，为空查询所有策略
-		State:    "pending",             // pending or done，为空查询所有状态
-		UserId:   order.UserId,          // 用户 id
-		Order:    atm_sdk.SortOrder_ASC, // SortOrder_ASC or SortOrder_DESC
-		Cursor:   "",                    // 分页 cursor
-		Limit:    100,                   // 默认 50
+	results, err := client.ListOrders(ctx, &proto.MerchantServiceReq_ListOrders{
+		Symbol:   "BTCUSDT",           // pay symbol，为空查询所有交易对
+		Side:     "ASK",               // ASK or BID，为空查询所有方向
+		Strategy: StrategyMarket,      // 策略，为空查询所有策略
+		State:    "pending",           // pending or done，为空查询所有状态
+		UserId:   order.UserId,        // 用户 id
+		Order:    proto.SortOrder_ASC, // SortOrder_ASC or SortOrder_DESC
+		Cursor:   "",                  // 分页 cursor
+		Limit:    100,                 // 默认 50
 	})
 
 	if err != nil {
