@@ -11,9 +11,9 @@ import (
 	"github.com/twitchtv/twirp"
 )
 
-func GenerateToken(merchantID string, key *rsa.PrivateKey, exp time.Duration) string {
+func GenerateToken(userID string, key *rsa.PrivateKey, exp time.Duration) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
-		"uid": merchantID,
+		"uid": userID,
 		"exp": time.Now().Add(exp).Unix(),
 	})
 
