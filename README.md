@@ -4,6 +4,7 @@ fox atm sdk
 * api host `https://efox.fox.one`
 * atm 默认收款地址 fb151d94-cc0e-358b-9cdb-57215a557a31 
 * atm 注册商户有自己单独的收款地址
+* rest api [文档](./docs/api.md)
 
 ## 注册
 

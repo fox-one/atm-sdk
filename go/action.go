@@ -9,6 +9,8 @@ const (
 	StrategyMarket = "MARKET"
 	// 跟随买一卖一下单
 	StrategyFollow = "FOLLOW"
+	// 限价单
+	StrategyLimit = "LIMIT"
 )
 
 type OrderAction struct {
@@ -16,6 +18,8 @@ type OrderAction struct {
 	Asset string `json:"a,omitempty"`
 	// MARKET or FOLLOW
 	Strategy string `json:"s,omitempty"`
+	// Price 限价价格，仅用在 LIMIT 策略
+	Price string `json:"price,omitempty"`
 	// 注册或者更新 public key, rsa public key base64 格式
 	PublicKey string `json:"u,omitempty"`
 }
