@@ -2,10 +2,27 @@
 fox atm sdk
 
 * api host `https://efox.fox.one`
+* atm 默认收款地址 fb151d94-cc0e-358b-9cdb-57215a557a31 
+* atm 注册商户有自己单独的收款地址
 
-## 商户配置
+## 注册
 
-联系 Fox.ONE 获取商户 id，签名私钥，下单 mixin 钱包地址
+* 生成 rsa 公私钥对，将公钥放在 memo 转账给 atm
+* 后续用这个私钥作为 token 的签名私钥
+
+**Memo**
+
+```go
+key, _ := rsa.GenerateKey(rand.Reader, 1024)
+pub := key.Public()
+data,_ := x509.MarshalPKIXPublicKey(pub)
+action := atm.OrderAction{
+    PublicKey: base64.StdEncoding.EncodeToString(data),
+}
+memo := action.Encode()
+
+// 用上面生成的 memo 随便转一笔 cnb 之类的不值钱的币给 atm 即可完成注册
+```
 
 ## 下单
 
@@ -16,11 +33,13 @@ fox atm sdk
 **Memo**
 
 ```go
-action := OrderAction{
+action := atm.OrderAction{
     Asset: "BTC", // symbol or asset id
-    Strategy: StrategyMarket, // 默认是 StrategyMarket
+    Strategy: atm.StrategyMarket, // 默认是 StrategyMarket
 }
 memo := action.Encode()
+
+// 用上面生成的 memo 转账你想花费的币给 atm 即可完成下单
 ```
 
 ## 查询订单
@@ -29,14 +48,13 @@ memo := action.Encode()
 因为异步到账的原因，可能会在一小段时间内查询不到订单
 
 ```go
-const host = "https://efox.fox.one"
-client := NewMerchantServiceProtobufClient(host, &http.Client{})
+client := proto.NewMerchantServiceProtobufClient(atm.Endpoint, &http.Client{})
 
-token := GenerateToken(merchantID, key, time.Minute)
-ctx := WithToken(context.Backgroud(), token)
+token := atm.GenerateToken(merchantID, key, time.Minute)
+ctx := atm.WithToken(context.Backgroud(), token)
 
 orderID := "<trace id>"
-order, err := client.ReadOrder(ctx, &MerchantServiceReq_ReadOrder{
+order, err := client.ReadOrder(ctx, &proto.MerchantServiceReq_ReadOrder{
     TraceId: orderID,
 })
 
@@ -55,10 +73,10 @@ if err != nil {
 查询到订单之后，才可以撤单
 
 ```go
-token := GenerateToken(merchantID, key, time.Minute)
-ctx := WithToken(context.Backgroud(), token)
+token := atm.GenerateToken(merchantID, key, time.Minute)
+ctx := atm.WithToken(context.Backgroud(), token)
 
-if _, err := client.CancelOrder(ctx, &MerchantServiceReq_CancelOrder{
+if _, err := client.CancelOrder(ctx, &proto.MerchantServiceReq_CancelOrder{
     TraceId: orderID,
 }); err != nil {
     // handle cancel order failed error
@@ -68,14 +86,14 @@ if _, err := client.CancelOrder(ctx, &MerchantServiceReq_CancelOrder{
 ## 查询用户历史订单
 
 ```go
-token := GenerateToken(merchantID, key, time.Minute)
-ctx := WithToken(context.Backgroud(), token)
+token := atm.GenerateToken(merchantID, key, time.Minute)
+ctx := atm.WithToken(context.Backgroud(), token)
 
-results, err := client.ListOrders(ctx, &MerchantServiceReq_ListOrders{
+results, err := client.ListOrders(ctx, &proto.MerchantServiceReq_ListOrders{
     Symbol:   "BTCUSDT",      // pay symbol，为空查询所有交易对
     Side:     "ASK",          // ASK or BID，为空查询所有方向
     Strategy: StrategyMarket, // 策略，为空查询所有策略
-    State:    "pending",      // pending or done，为空查询所有状态
+    State:    "pending",      // pending or done，为空则查询所有状态
     UserId:   order.UserId,   // 用户 id
     Order:    SortOrder_ASC,  // SortOrder_ASC or SortOrder_DESC
     Cursor:   "",             // 分页 cursor

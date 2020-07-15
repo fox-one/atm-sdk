@@ -12,10 +12,12 @@ const (
 )
 
 type OrderAction struct {
-	// Asset 为要买的币的 symbol 或者 mixin asset id
+	// Asset 为要换取的币的 symbol 或者 mixin asset id
 	Asset string `json:"a,omitempty"`
 	// MARKET or FOLLOW
 	Strategy string `json:"s,omitempty"`
+	// 注册或者更新 public key, rsa public key base64 格式
+	PublicKey string `json:"u,omitempty"`
 }
 
 func (action OrderAction) Encode() string {
@@ -30,6 +32,7 @@ const (
 	TransferActionSourceFilled = "FILLED"
 )
 
+// TransferAction 是 atm 兑换完成或者失败后回款的 memo 格式
 type TransferAction struct {
 	// Service = ATM
 	Service string `json:"s,omitempty"`

@@ -1,0 +1,303 @@
+syntax = "proto3";
+
+package fox.atm.service;
+option go_package = "proto";
+
+import "google/protobuf/timestamp.proto";
+
+enum Side {
+    Ask = 0;
+    Bid = 1;
+}
+
+enum Strategy {
+    Market = 0;
+    Limit = 1;
+    Follow = 2;
+    Flex = 3;
+}
+
+enum SortOrder {
+    DESC = 0;
+    ASC = 1;
+}
+
+message Pagination {
+    string next_cursor = 1;
+    bool has_next = 2;
+}
+
+message Depth {
+    message Order {
+        string price = 1;
+        string amount = 2;
+    }
+
+    string version = 1;
+    google.protobuf.Timestamp updated_at = 2;
+    repeated Order asks = 3;
+    repeated Order bids = 4;
+}
+
+message Asset {
+    string asset_id = 1;
+    string symbol = 2;
+    string logo = 3;
+    string name = 4;
+    int32 precision = 5;
+    // 最小下单量
+    string min = 6;
+    // 最大下单量
+    string max = 7;
+}
+
+message Pair {
+    enum State {
+        Trading = 0;
+        Break = 1;
+    }
+
+    string symbol = 1;
+    string display_symbol = 2;
+    string exchange = 3;
+    State state = 4;
+    int32 price_precision = 5;
+    int32 base_precision = 6;
+    int32 quote_precision = 7;
+    // 24h 价格变化幅度
+    string change = 8;
+    // 当前价格
+    string price = 9;
+    // 买一价格
+    string price_buy = 10;
+    // 卖一价格
+    string price_sell = 11;
+    repeated string strategies = 12;
+    Asset base = 13;
+    Asset quote = 14;
+}
+
+message Book {
+    string id = 1;
+    google.protobuf.Timestamp created_at = 2;
+
+    enum State {
+        Pending = 0;
+        Paid = 1;
+        Done = 2;
+    }
+    State state = 3;
+    string merchant_id = 4;
+    string broker_id = 5;
+    string trace_id = 6;
+    string user_id = 7;
+    string payer = 8;
+    string snapshot_id = 9;
+    string receipt_id = 10;
+    string memo = 11;
+    string funds = 12;
+    string pay_symbol = 13;
+    string fill_symbol = 14;
+    Strategy strategy = 15;
+    string price = 16;
+    string discount = 17;
+}
+
+message Order {
+    string id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp updated_at = 3;
+    google.protobuf.Timestamp cancelled_at = 4;
+    string user_id = 5;
+    string merchant_id = 6;
+    enum State {
+        Trading = 0;
+        Filled = 1;
+        Cancelled = 2;
+        Rejected = 3;
+        Timeout = 4;
+    }
+    State state = 7;
+    string pay_symbol = 8;
+    string fill_symbol = 9;
+    string symbol = 10;
+    Side side = 11;
+    Strategy strategy = 12;
+    string price = 13;
+    string discount = 14;
+    string funds = 15;
+    string filled_funds = 16;
+    string filled_amount = 17;
+    string extra_filled_amount = 18;
+    string fee_amount = 19;
+    string average_price = 20;
+}
+
+message OrderReport {
+    string id = 1;
+    google.protobuf.Timestamp created_at = 2;
+    string date = 3;
+    string user_id = 4;
+    string merchant_id = 5;
+    string symbol = 6;
+    string side = 7;
+    string filled_amount = 8;
+    string obtained_amount = 9;
+    string fee_amount = 10;
+    string fee_asset = 11;
+    int32 count = 12;
+}
+
+message User {
+    string id = 1;
+    string name = 2;
+    string role = 3;
+    string broker_id = 4;
+}
+
+// market service
+
+message MarketServiceReq {
+    message ListPairs {}
+
+    message ReadPair {
+        string symbol = 1;
+    }
+
+    message ReadDepth {
+        string symbol = 1;
+    }
+}
+
+message MarketServiceResp {
+    message ListPairs {
+        repeated Pair pairs = 1;
+    }
+}
+
+service MarketService {
+    // 获取交易对列表
+    rpc ListPairs(MarketServiceReq.ListPairs) returns (MarketServiceResp.ListPairs);
+
+    // 获取交易对
+    rpc ReadPair(MarketServiceReq.ReadPair) returns (Pair);
+
+    // 获取交易对深度
+    rpc ReadDepth(MarketServiceReq.ReadDepth) returns (Depth);
+}
+
+// user service
+
+message UserServiceReq {
+    message Me{}
+
+    message ReadOrder {
+        string trace_id = 1;
+    }
+
+    message ListOrders {
+        string symbol = 1;
+        string side = 2;
+        string strategy = 3;
+        string state = 4;
+        string merchant_id = 5;
+        SortOrder order = 6;
+        string cursor = 7;
+        int64 limit = 8;
+    }
+
+    message CancelOrder {
+        string trace_id = 1;
+    }
+}
+
+message UserServiceResp {
+    message CancelOrder {}
+
+    message ListOrders {
+        repeated Order orders = 1;
+        Pagination pagination = 2;
+    }
+}
+
+// UserService handle user requests
+service UserService {
+    // 获取个人信息 GET /api/me
+    rpc Me(UserServiceReq.Me) returns (User);
+
+    // 获取订单详情 GET /api/m/order/{trace_id}
+    rpc ReadOrder(UserServiceReq.ReadOrder) returns (Order);
+
+    // 查询订单列表 GET /api/m/orders
+    rpc ListOrders(UserServiceReq.ListOrders) returns (UserServiceResp.ListOrders);
+
+    // 撤单 DELETE /api/m/order/{trace_id}
+    rpc CancelOrder(UserServiceReq.CancelOrder) returns (UserServiceResp.CancelOrder);
+}
+
+// merchant service
+
+message MerchantServiceReq {
+    message CreateBook {
+        string trace_id = 1;
+        string user_id = 2;
+        string receipt_id = 3;
+    }
+
+    message ReadOrder {
+        string trace_id = 1;
+    }
+
+    message ListOrders {
+        string symbol = 1;
+        string side = 2;
+        string strategy = 3;
+        string state = 4;
+        string user_id = 5;
+        SortOrder order = 6;
+        string cursor = 7;
+        int64 limit = 8;
+    }
+
+    message CancelOrder {
+        string trace_id = 1;
+    }
+
+    message ListOrderReports {
+        string date = 1;
+        string cursor = 2;
+        int64 limit = 3;
+    }
+}
+
+message MerchantServiceResp {
+    message CancelOrder {}
+
+    message ListOrders {
+        repeated Order orders = 1;
+        Pagination pagination = 2;
+    }
+
+    message ListOrderReports {
+        repeated OrderReport reports = 1;
+        Pagination pagination = 2;
+    }
+}
+
+// MerchantService handle merchant request
+service MerchantService {
+    // 预创建订单 POST /api/m/books
+    rpc CreateBook(MerchantServiceReq.CreateBook) returns (Book);
+
+    // 获取订单详情 GET /api/m/order/{trace_id}
+    rpc ReadOrder(MerchantServiceReq.ReadOrder) returns (Order);
+
+    // 查询订单列表 GET /api/m/orders
+    rpc ListOrders(MerchantServiceReq.ListOrders) returns (MerchantServiceResp.ListOrders);
+
+    // 查询订单报表 GET /api/m/order-reports
+    rpc ListOrderReports(MerchantServiceReq.ListOrderReports) returns (MerchantServiceResp.ListOrderReports);
+
+    // 撤单 DELETE /api/m/order/{trace_id}
+    rpc CancelOrder(MerchantServiceReq.CancelOrder) returns (MerchantServiceResp.CancelOrder);
+}
